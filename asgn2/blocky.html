@@ -1,0 +1,108 @@
+<!--Valentina Serrano
+// 04-12-2025
+//asg1.html-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ASG2: Blocky 3D Animal</title>
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 a_Position;
+    attribute vec4 a_Color;
+    uniform mat4 u_ModelMatrix;
+    uniform mat4 u_ViewMatrix;
+    uniform mat4 u_ProjMatrix;
+    varying vec4 v_Color;
+
+    void main() {
+      gl_Position = u_ProjMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
+      v_Color = a_Color;
+    }
+  </script>
+
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    varying vec4 v_Color;
+
+    void main() {
+      gl_FragColor = v_Color;
+    }
+  </script>
+    
+  <script src="lib/cuon-utils.js"></script>
+  <script src="lib/webgl-utils.js"></script>
+  <script src="lib/webgl-debug.js"></script>
+  <script src="lib/cuon-matrix-cse160.js"></script>
+  <script src="blocky.js"></script>
+</head>
+
+<body onload="main()">
+  <div class="header">ASG2: Blocky 3D Animal</div>
+    <!-- Layout Container -->
+  <div style="display: flex; align-items: flex-start; gap: 30px;">
+    <canvas id="webgl" width="500" height="500">
+      Please use a browser that supports HTML5 Canvas.
+    </canvas>
+  
+        <!-- Global Controls -->
+        <div>
+          <h3>Global Controls</h3>
+          <label for="globalRotate">Y-Axis Rotate: </label><br/>
+          <input type="range" id="globalRotate" min="-180" max="180" value="0" oninput="yGlobalRotate(this.value)"><br/><br/>
+    
+          <label for="xModelRotate">X-Axis Rotate: </label><br/>
+          <input type="range" id="xModelRotate" min="-90" max="90" value="0" oninput="modelRotate(this.value)"><br/><br/>
+    
+          <button onclick="flutterToggle()">Flutter Animation</button><br/><br/>
+    
+          <label for="animSpeed">Animation Speed:</label><br/>
+          <input type="range" id="animSpeed" min="1" max="10" value="5" oninput="animSpeed(this.value)"><br/><br/>
+        </div>
+
+        <!-- Arm + Leg Sliders Side-by-Side -->
+        <div style="display: flex; gap: 30px;">
+  
+          <!-- Arm Sliders -->
+          <div>
+            <h3>Antenna Sliders</h3>
+            <label for="lAntOne">Left Antenna Angle:</label><br/>
+            <input type="range" id="lAntOne" min="0" max="90" value="0" oninput="lAntOneRotate(this.value)"><br/><br/>
+
+            <label for="lntTwo">Left Tip Antenna Angle:</label><br/>
+            <input type="range" id="lAntTwo" min="-45" max="45" value="0" oninput="lAntTwoRotate(this.value)"><br/><br/>
+  
+            <label for="rAntOne">Right Antenna Angle:</label><br/>
+            <input type="range" id="rAntOne" min="0" max="90" value="0" oninput="rAntOneRotate(this.value)"><br/><br/>
+
+            <label for="rAntTwo">Right Tip Antenna Angle:</label><br/>
+            <input type="range" id="rAntTwo" min="-45" max="45" value="0" oninput="rAntTwoRotate(this.value)"><br/><br/>
+          </div>
+  
+        </div>
+  
+        <!-- Joint Controls: Hand and Foot side-by-side -->
+        <div style="display: flex; flex-direction: row; gap: 30px;">
+  
+          <!-- Hand Joints -->
+          <div>
+            <h3>Wing Movement</h3>
+            <label for="lTopWing">Left Top Wing Angle:</label><br/>
+            <input type="range" id="lTopWing" min="-45" max="45" value="0" oninput="lTopWingRotate(this.value)"><br/><br/>
+
+            <label for="lLowWing">Left Bottom Wing Angle:</label><br/>
+            <input type="range" id="lLowWing" min="-45" max="45" value="0" oninput="lLowWingRotate(this.value)"><br/><br/>
+
+            <label for="rTopWing">Right Top Wing Angle:</label><br/>
+            <input type="range" id="rTopWing" min="-45" max="45" value="0" oninput="rTopWingRotate(this.value)"><br/><br/>
+  
+            <label for="rLowWing">Right Bottom Wing Angle:</label><br/>
+            <input type="range" id="rLowWing" min="-45" max="45" value="0" oninput="rLowWingRotate(this.value)"><br/><br/>
+          </div>
+  
+        </div>
+      </div>
+    </div>
+
+</body>
+</html>
