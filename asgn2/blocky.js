@@ -14,7 +14,7 @@ let projMatrix = new Matrix4();
 let g_time = 0;
 let g_startTime = performance.now();
 
-console.log('asg2.js loaded');
+console.log('blocky.js loaded');
 
 
 function main() {
