@@ -1,0 +1,121 @@
+<!--Valentina Serrano
+    05-10-2025
+    world.html-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ASGN3: Creating a Virtual World</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      margin: 0;
+      padding: 10px;
+      max-height: 100vh;
+      overflow: hidden;
+    }
+
+    .header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .left-column {
+      flex-shrink: 0;
+    }
+
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .controls-column {
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .controls-column ul {
+      margin: 5px 0;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+
+<body onload="main()">
+<div class="header">Assignment 3: Creating a Virtual World (Hard)</div>
+<div class="row">
+    <div class="left-column">
+        <canvas id="webgl" width="512" height="512">
+            Please use a browser that supports "canvas"
+        </canvas>
+    </div>
+    
+    <div class="right-column">
+        <p id="fps">FPS: --</p>
+
+        There was a time these lands were peaceful... home even. You miss the valley's music and 
+        sounds of life and community. But it's been so long since you've seen another soul in this "damned" 
+        valley. <br><br>
+        You know you must travel until you find
+        some sign of humanity and pray it doesn't attack you. You only have your yourself and your 
+        spirit guardian. That guardian is the last remnant of your home, your wife, your old life.... 
+        <br> <br>
+
+        You must keep moving...
+
+        <button id="spawnSheepButton">Summon your Guardian Sheep</button>
+    </div>
+</div>
+
+<div class="controls-row">
+    <div class="controls-column">
+        <p><b>Controls:</b></p>
+        <ul>
+            <li><b>W</b>: Move Forward</li>
+            <li><b>A</b>: Move Left</li>
+            <li><b>S</b>: Move Backward</li>
+            <li><b>D</b>: Move Right</li>
+            <li><b>Q</b>: Turn Left</li>
+            <li><b>E</b>: Turn Right</li>
+        </ul>
+    </div>
+    <div class="controls-column">
+        <br><br><br>
+        <li><b>Z</b>: Move Vertical Up</li>
+        <li><b>X</b>: Move Vertical Down</li>
+        <li><b>Mouse Hold & Drag</b>: Look Around</li>
+        <li><b>F</b>: Add Block in Front</li>
+        <li><b>G</b>: Delete Block in Front</li>
+    </div>
+</div>
+
+
+<script src="lib/webgl-utils.js"></script>
+<script src="lib/webgl-debug.js"></script>
+<script src="lib/cuon-utils.js"></script>
+<script src="lib/cuon-matrix-cse160.js"></script>
+<script src="GuardianRender.js"></script>
+<script src="Triangle.js"></script>
+<script src="Camera.js"></script>
+<script src="Cube.js"></script>
+<script src="world.js"></script>
+
+</body>
+</html>
