@@ -2,7 +2,7 @@
 Valentina Serrano
 5-11-2025
 1848892 
-world.js
+Lightworld.js
 */
 
 var VSHADER_SOURCE = `
