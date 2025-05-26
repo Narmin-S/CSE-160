@@ -1,6 +1,6 @@
 /*
 Valentina Serrano
-5-11-2025
+5-26-2025
 1848892 
 Lightworld.js
 */
@@ -9,51 +9,124 @@ var VSHADER_SOURCE = `
     precision mediump float;
     attribute vec4 a_Position;
     attribute vec2 a_UV;
+    attribute vec3 a_Normal;
     varying vec2 v_UV;
+    varying vec3 v_Normal;
+    varying vec4 v_VertPos;
     uniform mat4 u_ModelMatrix;
     uniform mat4 u_GlobalRotateMatrix;
     uniform mat4 u_ViewMatrix;
     uniform mat4 u_ProjectionMatrix;
+
     void main() {
         gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
         v_UV = a_UV;
-    }`
+        v_Normal = a_Normal;
+        v_VertPos = u_ModelMatrix * a_Position;
+    }`;
 
-
-var FSHADER_SOURCE = `
+//Fragment shader program
+var FSHADER_SOURCE =`
     precision mediump float;
     varying vec2 v_UV;
+    varying vec3 v_Normal;
     uniform vec4 u_FragColor;
     uniform sampler2D u_Sampler0;
     uniform sampler2D u_Sampler1;
     uniform sampler2D u_Sampler2;
-    uniform sampler2D u_Sampler3;
     uniform int u_whichTexture;
-    void main() {
-       if(u_whichTexture == -2){
-           gl_FragColor = u_FragColor; }
-       else if(u_whichTexture == -1){
-           gl_FragColor = vec4(v_UV, 1.0, 1.0); }
+    uniform vec3 u_lightPos;
+    uniform vec3 u_cameraPos;
+    uniform vec3 u_lightColor;
+    uniform int u_light;
+    uniform int u_lightC;
+    varying vec4 v_VertPos;
     
-       else if(u_whichTexture == 0){
-           gl_FragColor = texture2D(u_Sampler0, v_UV);}
-
-       else if(u_whichTexture == 1){
-           gl_FragColor = texture2D(u_Sampler1, v_UV); }
-
-       else if(u_whichTexture == 2){
-           gl_FragColor = texture2D(u_Sampler2, v_UV); }
-       else if(u_whichTexture == 3){
-           gl_FragColor = texture2D(u_Sampler3, v_UV); }
-       else { 
-            gl_FragColor = vec4(1, .2, .2, 1);
+    uniform vec3 u_spotLightPos;
+    
+    void main() {
+      if(u_whichTexture == -3){
+           gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
+       } else if(u_whichTexture == -2){
+           gl_FragColor = u_FragColor;
+       } else if (u_whichTexture ==-1){
+           gl_FragColor = vec4(v_UV,1.0,1.0);
+       } else if(u_whichTexture == 0){
+           gl_FragColor = texture2D(u_Sampler0, v_UV);
+       } else if(u_whichTexture == 1){
+           gl_FragColor = texture2D(u_Sampler1, v_UV);
+       } else if(u_whichTexture == 2){
+           gl_FragColor = texture2D(u_Sampler2, v_UV);
+       } else{
+           gl_FragColor = vec4(1,.2,.2,1);
        }
-}`
+    
+       if (u_light==1){
+    
+       vec3 lightVector = u_lightPos - vec3(v_VertPos);
+       float r = length(lightVector);
+       vec3 L = normalize(lightVector);
+       vec3 N = normalize(v_Normal);
+       float nDotL = max(dot(N,L), 0.0);
+    
+       vec3 R = reflect(-L,N);
+    
+       vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
+    
+       float specular = pow(max(dot(E,R), 0.0), 100.0);
+    
+       vec3 diffuse = vec3(gl_FragColor) * nDotL;
+       vec3 ambient = vec3(gl_FragColor) * 0.3;
+       if(u_whichTexture == 0 || u_whichTexture == 1|| u_whichTexture == -2)
+           specular = 0.0;
+           if(u_lightC == 0){
+           gl_FragColor = vec4(specular+diffuse+ambient, 1.0);
+           
+           } else{
+           gl_FragColor = vec4(u_lightColor*(diffuse+ambient), 1.0);
+           }
+       } else if (u_light == 2){
+    
+       vec3 lightVector = u_spotLightPos - vec3(v_VertPos);
+       vec3 L = normalize(lightVector);
+       vec3 N = normalize(v_Normal);
+       float nDotL = dot(N,L);
+           float spotFactor = 1.0;
+           vec3 D = -vec3(0,-1,0);
+       float spotCosine = dot(D,L);
+           float spotCosineCutoff = 0.98; 
+           if (spotCosine >= spotCosineCutoff) { 
+                spotFactor = pow(spotCosine,2.0);
+           } else { 
+                spotFactor = 0.0;
+           }
+           if(dot(N,L) <=0.0){
+               gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+          } else{
+               vec3 diffuse = vec3(gl_FragColor) * nDotL;
+               vec3 ambient = vec3(gl_FragColor) * 0.3;
+               vec3 reflection = dot(L,N) * u_lightColor * diffuse;
+               vec3 R = reflect(-L,N);
+               vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
+               float specular = pow(max(dot(E,R), 0.0), 100.0);
+               if(dot(R,E)>0.0){
+                   float factor = pow(dot(R,E),2.0);
+                   reflection += factor *specular* u_lightColor;
+                 }
+               vec3 color = spotFactor*reflection;
+               gl_FragColor = vec4(color, 1.0);
+           }
+    
+       }
+    }`;
 
 let canvas, gl;
 let a_Position, a_UV;
 let u_FragColor, u_ModelMatrix, u_ProjectionMatrix;
 let u_ViewMatrix, u_GlobalRotateMatrix, u_whichTexture;
+
+let a_Normal = false;
+let g_normal = false;
 
 let u_Sampler0, u_Sampler1, u_Sampler2;
 
@@ -72,16 +145,25 @@ var g_Angle2 = 0;
 let g_BoolTailAnimation = false;
 let g_globalBool = true;
 
-let g_globalAngleX = 0;
-let g_globalAngleY = 0;
-let g_globalAngleZ = 0;
-
 var g_start_time = performance.now() / 1000.0;
 var g_seconds = performance.now() / 1000.0 - g_start_time;
 let g_camera = new Camera();
 
 let g_yaw = -90;
 let g_pitch = 0;
+
+let u_spotLightPos;
+let g_lightPos = [10,3,12]
+let drawMap_bool = false;
+let g_globalAngleY = 0;
+let g_globalAngleX = 0;
+let g_globalAngleZ = 0;
+let g_lightColor = [1,1,1];
+let g_lightMoveOn = false;
+let g_spotlightPos = [10.125, g_set_Location + 0.4, 7.15];
+
+let u_lightColor;
+let u_lightC;
 
 function setupCanvas() {
     canvas = document.getElementById('webgl');
@@ -111,6 +193,13 @@ function connectVariablesToGLSL() {
         console.log('Failed to get the storage location of a_UV');
         return;
     }
+
+    a_Normal = gl.getAttribLocation(gl.program, 'a_Normal');
+    if (a_Normal < 0) {
+        console.log('Failed to get the storage location of a_Normal');
+        return;
+    }
+
     u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
     if (!u_FragColor) {
         console.log('Failed to get the storage location of u_FragColor');
@@ -156,11 +245,53 @@ function connectVariablesToGLSL() {
         console.log('Failed to get the storage location of u_sampler3');
         return;
     }
+
+    u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
+    if (!u_lightPos) {
+        console.log('Failed to get the storage location of u_lightPos');
+        return;
+    }
+
+    u_spotLightPos = gl.getUniformLocation(gl.program, 'u_spotLightPos');
+    if (!u_spotLightPos) {
+        console.log('Failed to get the storage location of u_spotLightPos');
+        return;
+    }
+
+    u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+    if (!u_cameraPos) {
+        console.log('Failed to get the storage location of u_cameraPos');
+        return;
+    }
+
+    u_lightColor = gl.getUniformLocation(gl.program, 'u_lightColor');
+    if (!u_lightColor) {
+        console.log('Failed to get the storage location of u_lightColor');
+        return;
+    }
+
+    u_light = gl.getUniformLocation(gl.program, 'u_light');
+    if (!u_light) {
+        console.log('Failed to get the storage location of u_light');
+        return;
+    }
+
+    u_lightC = gl.getUniformLocation(gl.program, 'u_lightC');
+    if (!u_lightC) {
+        console.log('Failed to get the storage location of u_lightC');
+        return;
+    }
+    
     var identityM = new Matrix4();
     gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
 
 function lightCalls() {
+    document.getElementById('Normal_On').addEventListener('click', function() {
+        g_normal = !g_normal;
+        renderAllShapes();
+    });
+
     const lightSliders = ['X', 'Y', 'Z'];
     lightSliders.forEach((axis, i) => {
         document.getElementById(`lightSlide${axis}`).addEventListener('mousemove', function (ev) {
@@ -180,42 +311,51 @@ function lightCalls() {
         });
     });
 
-    let g_lightMoveOn = false;
-
     document.getElementById('toggle_light_animation').addEventListener('click', () => {
-        g_lightMoveOn = !g_lightMoveOn; // Toggle the value
+        g_lightMoveOn = !g_lightMoveOn;
         renderAllShapes();
 
-        // Optionally change button text to reflect state
         document.getElementById('toggle_light_animation').textContent =
         g_lightMoveOn ? 'Turn Off Light Animation' : 'Turn On Light Animation';
     });
 
 
-    document.getElementById('Light_On').onclick = () => {
-        gl.uniform1i(u_light, 1);
+    let lightOn = true;
+
+    document.getElementById('toggleLight').onclick = () => {
+        lightOn = !lightOn;
+        
+        if (lightOn) {
+            gl.uniform1i(u_light, 1);
+        } else {
+            gl.uniform1i(u_light, 0);
+            gl.uniform1i(u_lightC, 0);
+            g_lightColor = [1, 1, 1];
+            
+            ['Red', 'Green', 'Blue'].forEach((col, i) => {
+                document.getElementById(`light${col}`).value = g_lightColor[i] * 255;
+            });
+        }
+
+        document.getElementById('toggleLight').textContent =
+        lightOn ? 'Turn Off Light' : 'Turn On Light';
     };
 
-    document.getElementById('Light_Off').onclick = () => {
-        gl.uniform1i(u_light, 0);
-        gl.uniform1i(u_lightC, 0);
-        g_lightColor = [1, 1, 1];
-        ['Red', 'Green', 'Blue'].forEach((col, i) => {
-        document.getElementById(`light${col}`).value = g_lightColor[i] * 255;
-        });
-    };
-
-    document.getElementById('Spot_Light_on').onclick = () => {
-        gl.uniform1i(u_light, 2);
-    };
-
-    document.getElementById('Spot_Light_off').onclick = () => {
-        gl.uniform1i(u_light, 0);
-        gl.uniform1i(u_lightC, 0);
-        g_lightColor = [1, 1, 1];
-        ['Red', 'Green', 'Blue'].forEach((col, i) => {
-        document.getElementById(`light${col}`).value = g_lightColor[i] * 255;
-        });
+    let spotlightOn = false;
+    document.getElementById('SpotlightToggle').onclick = () => {
+        spotlightOn = !spotlightOn;
+        if (spotlightOn) {
+            gl.uniform1i(u_light, 2);
+        } else {
+            gl.uniform1i(u_light, 0);
+            gl.uniform1i(u_lightC, 0);
+            g_lightColor = [1, 1, 1];
+            ['Red', 'Green', 'Blue'].forEach((col, i) => {
+            document.getElementById(`light${col}`).value = g_lightColor[i] * 255;
+            });
+        }
+        document.getElementById('SpotlightToggle').textContent =
+        lightOn ? 'Turn Off Spotlight' : 'Turn On Spotlight';
     };
 
     ['Red', 'Green', 'Blue'].forEach((col, i) => {
@@ -418,13 +558,41 @@ function renderAllShapes() {
         g_camera.up.elements[0], g_camera.up.elements[1], g_camera.up.elements[2]
     );
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
-    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, new Matrix4().elements);
+    
+    const globalRotMat = new Matrix4()
+    .rotate(g_globalAngleX, 1, 0, 0)
+    .rotate(g_globalAngleY, 0, 1, 0)
+    .rotate(g_globalAngleZ, 0, 0, 1);
+    gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
+    // === Clear Canvas ===
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.clear(gl.COLOR_BUFFER_BIT);
 
-    var duration = performance.now() - startTime;
-    SendTextToHTML(" ms:" + Math.floor(duration) + " fps: " + Math.floor(10000 / duration) / 10, "fps");
+    // === Lighting Uniforms ===
+    gl.uniform3fv(u_lightPos, g_lightPos);
+    gl.uniform3fv(u_spotLightPos, g_spotlightPos);
+    gl.uniform3fv(u_lightColor, g_lightColor);
+    gl.uniform3fv(u_cameraPos, g_camera.eye.elements);
+
+    // === Draw Floor ===
+    const floor = new Cube();
+    floor.textureNum = g_normal ? -3 : 2;
+    floor.matrix.translate(0, -0.75, 0);
+    floor.matrix.scale(20, 0.01, 20);
+    floor.matrix.translate(0, -0.5, 0);
+    floor.drawCubeFast();
+
+    // === Draw Light Cube ===
+    const lightCube = new Cube();
+    lightCube.color = [2, 2, 0, 1];
+    lightCube.textureNum = g_normal ? -3 : -2;
+    lightCube.matrix.translate(...g_lightPos);
+    lightCube.matrix.scale(-0.1, -0.1, -0.1);
+    lightCube.matrix.translate(-0.5, -0.5, -0.5);
+    lightCube.drawCubeFast();
+
+    // === Draw Scene Objects ===
+    drawSetting();
 
     drawSetting();
     if (g_migong) {
@@ -436,6 +604,10 @@ function renderAllShapes() {
         guardianSummon()
     }
     drawMap();
+
+    const duration = performance.now() - startTime;
+    const fpsText = `ms: ${Math.floor(duration)} fps: ${Math.floor(10000 / duration) / 10}`;
+    SendTextToHTML(fpsText, "fps");
 }
 
 function SendTextToHTML(text, htmlID) {
@@ -452,9 +624,16 @@ function drawSetting() {
     
     let sky = new Cube();
     sky.textureNum = 1;
-    sky.matrix.translate(-16, -16, -16);
-    sky.matrix.scale(64, 64, 64);
+    sky.matrix.translate(0,0,);
+    sky.matrix.scale(30,30,30);
     sky.drawCubeFast();
+
+    // === Decorative Sphere ===
+    const redSphere = new Sphere();
+    redSphere.color = [1, 0, 0, 1];         // red
+    redSphere.textureNum = -2;             // force flat color
+    redSphere.matrix.translate(12, 1, 12);
+    redSphere.render();
 }
 
 let g_map = [];
