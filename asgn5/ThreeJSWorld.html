@@ -28,6 +28,34 @@
 </head>
 <body>
   <canvas id="c"></canvas>
+  <div class="children">
+    <div class="controller number hasSlider">
+      <div class="name" id="lil-gui-name-1">fov</div>
+      <div class="widget"><div class="slider">
+        <div class="fill" style="width: 24.581%;"></div>
+      </div>
+      <input type="number" step="any" aria-labelledby="lil-gui-name-1">
+    </div>
+  </div>
+    <div class="controller number hasSlider">
+      <div class="name" id="lil-gui-name-2">near</div>
+      <div class="widget">
+        <div class="slider">
+          <div class="fill" style="width: 0%;"></div>
+        </div>
+        <input type="number" step="any" aria-labelledby="lil-gui-name-2">
+      </div>
+    </div>
+      <div class="controller number hasSlider">
+        <div class="name" id="lil-gui-name-3">far</div>
+        <div class="widget">
+          <div class="slider">
+            <div class="fill" style="width: 100%;"></div>
+          </div>
+          <input type="number" step="any" aria-labelledby="lil-gui-name-3">
+        </div>
+      </div>
+    </div>
   <script type="module" src="/ThreeJSWorld.js"></script>
 </body>
 </html>

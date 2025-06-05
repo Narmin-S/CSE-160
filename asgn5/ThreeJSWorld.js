@@ -1,24 +1,70 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
+import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
 
 function main() {
     const canvas = document.querySelector('#c');
     const renderer = new THREE.WebGLRenderer({antialias: true, canvas});
 
-    const fov = 75;
-    const aspect = 2;
+    const fov = 95;
+    const aspect = 3;
     const near = 0.1;
     const far = 100;
     const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     camera.position.set(0, 10, 30);
+
+    class MinMaxGUIHelper {
+        constructor(obj, minProp, maxProp, minDif) {
+            this.obj = obj;
+            this.minProp = minProp;
+            this.maxProp = maxProp;
+            this.minDif = minDif;
+        }
+        get min() {
+            return this.obj[this.minProp];
+        }
+        set min(v) {
+            this.obj[this.minProp] = v;
+            this.obj[this.maxProp] = Math.max(this.obj[this.maxProp], v + this.minDif);
+        }
+        get max() {
+            return this.obj[this.maxProp];
+        }
+        set max(v) {
+            this.obj[this.maxProp] = v;
+            this.min = this.min;  // this will call the min setter
+        }
+    }
+
+    function updateCamera() {
+        camera.updateProjectionMatrix();
+    }
+ 
+    const gui = new GUI();
+    gui.add(camera, 'fov', 1, 180).onChange(updateCamera);
+    const minMaxGUIHelper = new MinMaxGUIHelper(camera, 'near', 'far', 0.1);
+    gui.add(minMaxGUIHelper, 'min', 0.1, 50, 0.1).name('near').onChange(updateCamera);
+    gui.add(minMaxGUIHelper, 'max', 0.1, 50, 0.1).name('far').onChange(updateCamera);
+
+    
 
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0, 5, 0);
     controls.update();
     
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('lavenderblush');
+    const sce_loader = new THREE.CubeTextureLoader();
+    const sce_texture = sce_loader.load([
+            'textures/skybox/px.png',
+            'textures/skybox/nx.png',
+            'textures/skybox/py.png',
+            'textures/skybox/ny.png',
+            'textures/skybox/pz.png',
+            'textures/skybox/nz.png',
+        ]);
+        scene.background = sce_texture;
+
 
     {
         const planeSize = 60;
@@ -91,11 +137,25 @@ function main() {
     dragon_powers.push(textured_orb);
 
     {
-        const objLoader = new OBJLoader();
-        objLoader.load('models/dragon.obj', (root) => {
-            scene.add(root);
-        });
+        {
+            const objLoader = new OBJLoader();
+            const textureLoader = new THREE.TextureLoader();
+            const dragonTexture = textureLoader.load('textures/Dragon_ground_color.jpg');
+            dragonTexture.colorSpace = THREE.SRGBColorSpace;
+
+            objLoader.load('models/dragon.obj', (root) => {
+                root.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshPhongMaterial({
+                            map: dragonTexture
+                        });
+                    }
+                });
+                scene.add(root);
+            });
+        }
     }
+    
     function resizeRendererToDisplay(renderer){
         const canvas = renderer.domElement;
         const width = canvas.clientWidth;
