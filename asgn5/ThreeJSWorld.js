@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
 import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 
 function main() {
     const canvas = document.querySelector('#c');
@@ -155,6 +156,21 @@ function main() {
             });
         }
     }
+
+    {
+        const mtlLoader = new MTLLoader();
+        mtlLoader.load('models/indoorplant_03.mtl', (materials) => {
+        materials.preload();
+
+        const objLoader = new OBJLoader();
+        objLoader.setMaterials(materials);
+        objLoader.load('models/indoorplant_03.obj', (object) => {
+            object.position.x = 8;
+            object.position.z = 10;
+            scene.add(object);
+        });
+    });
+}
     
     function resizeRendererToDisplay(renderer){
         const canvas = renderer.domElement;
