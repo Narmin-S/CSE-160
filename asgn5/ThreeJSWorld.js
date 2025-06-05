@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
-import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 
 function main() {
@@ -38,17 +38,30 @@ function main() {
         }
     }
 
+    class ColorGUIHelper {
+        constructor(object, prop) {
+            this.object = object;
+            this.prop = prop;
+        }
+        get value() {
+            return `#${this.object[this.prop].getHexString()}`;
+        }
+        set value(hexString) {
+            this.object[this.prop].set(hexString);
+        }
+    }
+
     function updateCamera() {
         camera.updateProjectionMatrix();
     }
  
     const gui = new GUI();
-    gui.add(camera, 'fov', 1, 180).onChange(updateCamera);
+    const cameraFolder = gui.addFolder('Camera');
+    cameraFolder.add(camera, 'fov', 1, 180).onChange(updateCamera);
     const minMaxGUIHelper = new MinMaxGUIHelper(camera, 'near', 'far', 0.1);
-    gui.add(minMaxGUIHelper, 'min', 0.1, 50, 0.1).name('near').onChange(updateCamera);
-    gui.add(minMaxGUIHelper, 'max', 0.1, 50, 0.1).name('far').onChange(updateCamera);
+    cameraFolder.add(minMaxGUIHelper, 'min', 0.1, 50, 0.1).name('near').onChange(updateCamera);
+    cameraFolder.add(minMaxGUIHelper, 'max', 0.1, 50, 0.1).name('far').onChange(updateCamera);
 
-    
 
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0, 5, 0);
@@ -66,7 +79,26 @@ function main() {
         ]);
         scene.background = sce_texture;
 
+        const color = 0xFFFFFF;
+        const intensity = 1;
+        const light = new THREE.AmbientLight(color, intensity);
+        scene.add(light);
+    
 
+        const amibentFolder = gui.addFolder('Ambient Light');
+        amibentFolder.addColor(new ColorGUIHelper(light, 'color'), 'value').name('color');
+        amibentFolder.add(light, 'intensity', 0, 5, 0.01);
+
+        const skyColor = 0xB1E1FF;
+        const groundColor = 0xB97A20; 
+        const hemi_intensity = 1;
+        const hemi_light = new THREE.HemisphereLight(skyColor, groundColor, hemi_intensity);
+        scene.add(hemi_light);
+
+        const hemisphereFolder = gui.addFolder('Hemisphere Light');
+        hemisphereFolder.addColor(new ColorGUIHelper(hemi_light, 'color'), 'value').name('skyColor');
+        hemisphereFolder.addColor(new ColorGUIHelper(hemi_light, 'groundColor'), 'value').name('groundColor');
+        hemisphereFolder.add(hemi_light, 'intensity', 0, 5, 0.01);
     {
         const planeSize = 60;
         const loader = new THREE.TextureLoader();
